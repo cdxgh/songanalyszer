@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CineMood — Song Soul Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Libre+Baskerville:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #D4A017;
+    --deep-red: #8B1A1A;
+    --cream: #F5EDD6;
+    --ink: #1A1410;
+    --silver: #C0C0C0;
+    --bollywood-pink: #E8437A;
+    --hollywood-blue: #1B4F8A;
+    --bg: #0D0A07;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: 'Libre Baskerville', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  .film-strip-top, .film-strip-bottom {
+    height: 28px;
+    background: repeating-linear-gradient(90deg, var(--ink) 0, var(--ink) 18px, var(--gold) 18px, var(--gold) 20px, var(--ink) 20px, var(--ink) 22px, transparent 22px, transparent 38px);
+    border-top: 3px solid var(--gold);
+    border-bottom: 3px solid var(--gold);
+  }
+
+  header {
+    text-align: center;
+    padding: 3rem 2rem 2rem;
+    position: relative;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .star-ornament {
+    color: var(--gold);
+    font-size: 1.2rem;
+    letter-spacing: 4px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 900;
+    font-style: italic;
+    line-height: 0.9;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, var(--gold) 0%, #FFF5CC 40%, var(--gold) 70%, #B8860B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .tagline {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--silver);
+    margin-top: 0.8rem;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: 600px;
+    margin: 1.5rem auto;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .divider-icon { color: var(--gold); font-size: 1.2rem; }
+
+  /* Upload Zone */
+  .upload-section {
+    max-width: 700px;
+    margin: 0 auto 3rem;
+    padding: 0 1.5rem;
+  }
+
+  .upload-zone {
+    border: 2px dashed var(--gold);
+    border-radius: 4px;
+    padding: 4rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    background: linear-gradient(135deg, rgba(212,160,23,0.04) 0%, transparent 60%);
+    transition: all 0.4s ease;
+    overflow: hidden;
+  }
+
+  .upload-zone::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, var(--gold), transparent, var(--bollywood-pink), transparent, var(--hollywood-blue));
+    opacity: 0;
+    transition: opacity 0.4s;
+    z-index: -1;
+    border-radius: 4px;
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: transparent;
+    background: rgba(212,160,23,0.08);
+    transform: scale(1.01);
+  }
+  .upload-zone:hover::before, .upload-zone.dragover::before { opacity: 0.6; }
+
+  .upload-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    display: block;
+    filter: drop-shadow(0 0 12px rgba(212,160,23,0.5));
+  }
+
+  .upload-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+
+  .upload-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--silver);
+    opacity: 0.7;
+  }
+
+  #fileInput { display: none; }
+
+  .preview-img {
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: cover;
+    border-radius: 2px;
+    display: none;
+    margin: 0 auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(212,160,23,0.3);
+  }
+
+  .analyze-btn {
+    display: block;
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 1.2rem 2rem;
+    background: linear-gradient(135deg, var(--deep-red), #C0392B, var(--deep-red));
+    border: 1px solid rgba(212,160,23,0.5);
+    color: var(--gold);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: none;
+  }
+
+  .analyze-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(212,160,23,0.15), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .analyze-btn:hover::before { left: 100%; }
+  .analyze-btn:hover {
+    background: linear-gradient(135deg, #A93226, #E74C3C, #A93226);
+    box-shadow: 0 8px 30px rgba(139,26,26,0.5), 0 0 20px rgba(212,160,23,0.2);
+    transform: translateY(-2px);
+  }
+
+  .analyze-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Loader */
+  .loader {
+    display: none;
+    text-align: center;
+    padding: 3rem;
+  }
+
+  .clapperboard {
+    font-size: 3rem;
+    display: inline-block;
+    animation: clap 0.6s ease infinite alternate;
+  }
+
+  @keyframes clap {
+    0% { transform: rotate(-5deg) scale(1); }
+    100% { transform: rotate(5deg) scale(1.1); }
+  }
+
+  .loader-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-top: 1rem;
+    animation: pulse 1.5s ease infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Results */
+  .results {
+    max-width: 900px;
+    margin: 0 auto 4rem;
+    padding: 0 1.5rem;
+    display: none;
+  }
+
+  .mood-banner {
+    text-align: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(212,160,23,0.08) 0%, rgba(0,0,0,0) 50%, rgba(212,160,23,0.08) 100%);
+    border: 1px solid rgba(212,160,23,0.2);
+    border-radius: 4px;
+    margin-bottom: 2rem;
+  }
+
+  .mood-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--silver);
+    margin-bottom: 0.5rem;
+  }
+
+  .mood-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-style: italic;
+    color: var(--gold);
+    line-height: 1.1;
+  }
+
+  .mood-desc {
+    font-size: 0.95rem;
+    color: rgba(245,237,214,0.7);
+    margin-top: 0.8rem;
+    line-height: 1.7;
+  }
+
+  .songs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media(max-width:600px) { .songs-grid { grid-template-columns: 1fr; } }
+
+  .cinema-column {
+    background: rgba(0,0,0,0.4);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(212,160,23,0.15);
+  }
+
+  .column-header {
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    border-bottom: 1px solid rgba(212,160,23,0.15);
+  }
+
+  .bollywood-header { background: linear-gradient(135deg, rgba(232,67,122,0.25), rgba(232,67,122,0.05)); }
+  .hollywood-header { background: linear-gradient(135deg, rgba(27,79,138,0.25), rgba(27,79,138,0.05)); }
+
+  .col-flag { font-size: 1.4rem; }
+
+  .col-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-style: italic;
+    letter-spacing: 1px;
+  }
+  .bollywood-header .col-title { color: var(--bollywood-pink); }
+  .hollywood-header .col-title { color: #5B9BD5; }
+
+  .song-list { padding: 1rem; display: flex; flex-direction: column; gap: 0.8rem; }
+
+  .song-card {
+    padding: 1rem 1.2rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 3px;
+    border-left: 3px solid;
+    transition: all 0.3s ease;
+    cursor: default;
+    animation: slideIn 0.5s ease backwards;
+  }
+
+  .bollywood-card { border-left-color: var(--bollywood-pink); }
+  .hollywood-card { border-left-color: #5B9BD5; }
+
+  .song-card:hover {
+    background: rgba(255,255,255,0.07);
+    transform: translateX(4px);
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .song-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--cream);
+    margin-bottom: 0.2rem;
+  }
+
+  .song-movie {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--silver);
+    opacity: 0.6;
+  }
+
+  .song-why {
+    font-size: 0.8rem;
+    color: rgba(245,237,214,0.55);
+    margin-top: 0.5rem;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .scene-analysis {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(212,160,23,0.05);
+    border: 1px solid rgba(212,160,23,0.15);
+    border-radius: 4px;
+  }
+
+  .scene-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--gold);
+    letter-spacing: 1px;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .scene-body {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: rgba(245,237,214,0.7);
+  }
+
+  .reset-btn {
+    display: block;
+    margin: 2rem auto 0;
+    padding: 0.8rem 2rem;
+    background: transparent;
+    border: 1px solid rgba(212,160,23,0.4);
+    color: var(--gold);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+  .reset-btn:hover { background: rgba(212,160,23,0.1); border-color: var(--gold); }
+
+  /* Error */
+  .error-box {
+    background: rgba(139,26,26,0.2);
+    border: 1px solid rgba(139,26,26,0.5);
+    border-radius: 4px;
+    padding: 1.2rem 1.5rem;
+    text-align: center;
+    color: #FF9999;
+    font-size: 0.88rem;
+    display: none;
+    margin-top: 1rem;
+  }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(192,192,192,0.3);
+  }
+
+  .api-note {
+    max-width: 700px;
+    margin: 0 auto 2rem;
+    padding: 1rem 1.5rem;
+    background: rgba(27,79,138,0.1);
+    border: 1px solid rgba(27,79,138,0.3);
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #5B9BD5;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="film-strip-top"></div>
+
+<header>
+  <div class="logo-badge">
+    <span class="star-ornament">✦ ✦ ✦</span>
+  </div>
+  <h1>CineMood</h1>
+  <p class="tagline">Your face · Your vibe · Your soundtrack</p>
+  <div class="divider"><span class="divider-icon">🎬</span></div>
+</header>
+
+<div class="api-note">
+  🎭 Powered by Claude Vision AI · Analyzes facial expression + background + mood
+</div>
+
+<div class="upload-section">
+  <div class="upload-zone" id="uploadZone">
+    <span class="upload-icon">🎞️</span>
+    <p class="upload-title">Drop your photo here</p>
+    <p class="upload-sub">or click to browse · jpg · png · webp</p>
+    <img class="preview-img" id="previewImg" src="" alt="Preview">
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+  <div class="error-box" id="errorBox">Something went wrong. Please try again.</div>
+  <button class="analyze-btn" id="analyzeBtn">✦ Reveal My Soundtrack ✦</button>
+</div>
+
+<div class="loader" id="loader">
+  <div class="clapperboard">🎬</div>
+  <div class="loader-text">Reading your cinematic soul...</div>
+</div>
+
+<div class="results" id="results"></div>
+
+<div class="film-strip-bottom"></div>
+
+<footer>CineMood · Bollywood & Hollywood Song Analyzer · Powered by Claude AI</footer>
+
+<script>
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const previewImg = document.getElementById('previewImg');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const loader = document.getElementById('loader');
+const results = document.getElementById('results');
+const errorBox = document.getElementById('errorBox');
+
+let imageBase64 = null;
+let imageType = 'image/jpeg';
+
+uploadZone.addEventListener('click', (e) => {
+  if (e.target === analyzeBtn) return;
+  fileInput.click();
+});
+
+uploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('dragover');
+});
+
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadFile(file);
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) loadFile(fileInput.files[0]);
+});
+
+function loadFile(file) {
+  imageType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imageBase64 = e.target.result.split(',')[1];
+    previewImg.src = e.target.result;
+    previewImg.style.display = 'block';
+    uploadZone.querySelector('.upload-icon').style.display = 'none';
+    uploadZone.querySelector('.upload-title').style.display = 'none';
+    uploadZone.querySelector('.upload-sub').style.display = 'none';
+    analyzeBtn.style.display = 'block';
+    results.style.display = 'none';
+    errorBox.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+analyzeBtn.addEventListener('click', analyzeImage);
+
+async function analyzeImage() {
+  if (!imageBase64) return;
+
+  analyzeBtn.disabled = true;
+  loader.style.display = 'block';
+  results.style.display = 'none';
+  errorBox.style.display = 'none';
+
+  const prompt = `You are CineMood, a cinematic music expert who specializes in both Bollywood (Hindi film industry) and Hollywood music. Analyze this photo carefully.
+
+Look at:
+1. The person's facial expression (happy, sad, romantic, energetic, melancholic, angry, peaceful, mysterious, etc.)
+2. The background/setting (nature, urban, indoor, festive, dramatic, serene, etc.)
+3. The overall mood, lighting, and vibe of the image
+4. Body language and posture if visible
+
+Based on your analysis, respond ONLY with a valid JSON object in this exact format (no markdown, no extra text):
+
+{
+  "mood": "A poetic 3-5 word mood title",
+  "mood_description": "2-3 sentences describing the emotional and visual vibe you detected in the photo",
+  "scene_analysis": "3-4 sentences describing what you see — the expression, background, lighting, and the cinematic feeling it evokes",
+  "bollywood_songs": [
+    {
+      "title": "Song Title",
+      "movie": "Movie Name (Year)",
+      "why": "One sentence on why this song fits the photo's mood"
+    },
+    {
+      "title": "Song Title",
+      "movie": "Movie Name (Year)",
+      "why": "One sentence on why this song fits the photo's mood"
+    },
+    {
+      "title": "Song Title",
+      "movie": "Movie Name (Year)",
+      "why": "One sentence on why this song fits the photo's mood"
+    }
+  ],
+  "hollywood_songs": [
+    {
+      "title": "Song Title",
+      "movie": "Movie / Artist (Year)",
+      "why": "One sentence on why this song fits the photo's mood"
+    },
+    {
+      "title": "Song Title",
+      "movie": "Movie / Artist (Year)",
+      "why": "One sentence on why this song fits the photo's mood"
+    },
+    {
+      "title": "Song Title",
+      "movie": "Movie / Artist (Year)",
+      "why": "One sentence on why this song fits the photo's mood"
+    }
+  ]
+}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: imageType, data: imageBase64 }
+            },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const raw = data.content.map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    renderResults(parsed);
+
+  } catch (err) {
+    console.error(err);
+    errorBox.textContent = '✦ Could not read the cinematic soul of this image. Please try again.';
+    errorBox.style.display = 'block';
+  } finally {
+    loader.style.display = 'none';
+    analyzeBtn.disabled = false;
+  }
+}
+
+function renderResults(data) {
+  const bollywoodHTML = data.bollywood_songs.map((s, i) => `
+    <div class="song-card bollywood-card" style="animation-delay:${i * 0.12}s">
+      <div class="song-title">🎵 ${s.title}</div>
+      <div class="song-movie">${s.movie}</div>
+      <div class="song-why">${s.why}</div>
+    </div>
+  `).join('');
+
+  const hollywoodHTML = data.hollywood_songs.map((s, i) => `
+    <div class="song-card hollywood-card" style="animation-delay:${i * 0.12 + 0.3}s">
+      <div class="song-title">🎬 ${s.title}</div>
+      <div class="song-movie">${s.movie}</div>
+      <div class="song-why">${s.why}</div>
+    </div>
+  `).join('');
+
+  results.innerHTML = `
+    <div class="mood-banner">
+      <div class="mood-label">Your Cinematic Mood</div>
+      <div class="mood-text">${data.mood}</div>
+      <div class="mood-desc">${data.mood_description}</div>
+    </div>
+
+    <div class="songs-grid">
+      <div class="cinema-column">
+        <div class="column-header bollywood-header">
+          <span class="col-flag">🇮🇳</span>
+          <span class="col-title">Bollywood Picks</span>
+        </div>
+        <div class="song-list">${bollywoodHTML}</div>
+      </div>
+
+      <div class="cinema-column">
+        <div class="column-header hollywood-header">
+          <span class="col-flag">🎥</span>
+          <span class="col-title">Hollywood Picks</span>
+        </div>
+        <div class="song-list">${hollywoodHTML}</div>
+      </div>
+    </div>
+
+    <div class="scene-analysis">
+      <div class="scene-title">🎞️ Scene Analysis</div>
+      <div class="scene-body">${data.scene_analysis}</div>
+    </div>
+
+    <button class="reset-btn" onclick="resetApp()">✦ Analyze Another Photo</button>
+  `;
+
+  results.style.display = 'block';
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetApp() {
+  imageBase64 = null;
+  fileInput.value = '';
+  previewImg.style.display = 'none';
+  previewImg.src = '';
+  uploadZone.querySelector('.upload-icon').style.display = 'block';
+  uploadZone.querySelector('.upload-title').style.display = 'block';
+  uploadZone.querySelector('.upload-sub').style.display = 'block';
+  analyzeBtn.style.display = 'none';
+  analyzeBtn.disabled = false;
+  results.style.display = 'none';
+  errorBox.style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
